@@ -29,12 +29,14 @@ export interface Referral {
 export interface User {
   id: string;
   email: string;
+  referral_link?: string;
 }
 
 // Mock user data
 const mockUser: User = {
   id: '1',
-  email: 'user@lazrchain.com'
+  email: 'user@lazrchain.com',
+  referral_link: ''
 };
 
 const mockUserBalance: UserBalance = {
@@ -108,13 +110,13 @@ const mockReferrals: Referral[] = [
 ];
 
 export const useUserData = () => {
-  const [user] = useState<User>(mockUser);
+  const [user, setUser] = useState<User>(mockUser);
   const [userBalance, setUserBalance] = useState<UserBalance>(mockUserBalance);
   const [pastEarnings] = useState<PastEarning[]>(generatePastEarnings());
   const [todayEarnings, setTodayEarnings] = useState<number>(0);
   const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
   const [referrals] = useState<Referral[]>(mockReferrals);
-  const [lastRewardClaim] = useState<Date | null>(new Date(Date.now() - 3600000)); // 1 hour ago
+  const [lastRewardClaim] = useState<number>(Date.now() - 3600000); // 1 hour ago
   const [loading] = useState<boolean>(false);
 
   // Calculate today's earnings based on past earnings
@@ -151,7 +153,16 @@ export const useUserData = () => {
   };
 
   const generateReferralCode = () => {
-    return `LAZR${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const code = `LAZR${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const referralLink = `https://lazrchain.app/ref/${code}`;
+    setUser(prev => ({ ...prev, referral_link: referralLink }));
+    return referralLink;
+  };
+
+  const claimReferralBonus = async () => {
+    const bonusAmount = 5; // Fixed bonus amount
+    updateBalance(bonusAmount);
+    return Promise.resolve();
   };
 
   const refreshData = async () => {
@@ -171,6 +182,7 @@ export const useUserData = () => {
     updateBalance,
     claimReward,
     generateReferralCode,
+    claimReferralBonus,
     refreshData
   };
 };

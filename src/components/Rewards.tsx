@@ -1,377 +1,118 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { 
-  Gift, 
-  Clock, 
-  Star, 
-  Trophy,
-  Zap,
-  Target,
-  CheckCircle,
-  Lock,
-  Coins
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-
-interface UserBalance {
-  usdt_balance: number;
-}
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { DollarSign, Users, Coins, Star, Zap, Gift } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface RewardsProps {
-  userBalance: UserBalance;
+  userBalance?: { usdt_balance: number };
   referralEarnings: number;
-  lastRewardClaim: Date | null;
+  lastRewardClaim: number; // Changed to number (timestamp)
   onClaimReward: (amount: number) => void;
 }
 
-interface Reward {
-  id: string;
-  title: string;
-  description: string;
-  requirement: string;
-  reward: number;
-  type: 'daily' | 'milestone' | 'achievement';
-  progress: number;
-  maxProgress: number;
-  unlocked: boolean;
-  claimed: boolean;
-  icon: any;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
-}
-
 const Rewards = ({ userBalance, referralEarnings, lastRewardClaim, onClaimReward }: RewardsProps) => {
-  const [timeUntilNextClaim, setTimeUntilNextClaim] = useState<string>('');
-  const [canClaimDaily, setCanClaimDaily] = useState(false);
   const { toast } = useToast();
 
-  // Calculate time until next daily reward
-  useEffect(() => {
-    const updateTimer = () => {
-      if (lastRewardClaim) {
-        const nextClaimTime = new Date(lastRewardClaim.getTime() + 24 * 60 * 60 * 1000);
-        const now = new Date();
-        const timeDiff = nextClaimTime.getTime() - now.getTime();
-
-        if (timeDiff <= 0) {
-          setCanClaimDaily(true);
-          setTimeUntilNextClaim('');
-        } else {
-          setCanClaimDaily(false);
-          const hours = Math.floor(timeDiff / (1000 * 60 * 60));
-          const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-          const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-          setTimeUntilNextClaim(`${hours}h ${minutes}m ${seconds}s`);
-        }
-      } else {
-        setCanClaimDaily(true);
-        setTimeUntilNextClaim('');
-      }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [lastRewardClaim]);
-
-  // Define rewards based on user progress
-  const rewards: Reward[] = [
-    {
-      id: 'daily',
-      title: 'Daily Bonus',
-      description: 'Claim your daily USDT bonus',
-      requirement: 'Available every 24 hours',
-      reward: 1.0,
-      type: 'daily',
-      progress: canClaimDaily ? 1 : 0,
-      maxProgress: 1,
-      unlocked: true,
-      claimed: !canClaimDaily,
-      icon: Gift,
-      rarity: 'common'
-    },
-    {
-      id: 'first_deposit',
-      title: 'First Deposit Bonus',
-      description: 'Bonus for your first deposit',
-      requirement: 'Make your first deposit',
-      reward: 5.0,
-      type: 'milestone',
-      progress: userBalance.usdt_balance > 0 ? 1 : 0,
-      maxProgress: 1,
-      unlocked: true,
-      claimed: userBalance.usdt_balance === 0,
-      icon: Star,
-      rarity: 'rare'
-    },
-    {
-      id: 'balance_100',
-      title: 'Century Club',
-      description: 'Reach $100 USDT balance',
-      requirement: 'Maintain $100+ balance',
-      reward: 10.0,
-      type: 'milestone',
-      progress: Math.min(userBalance.usdt_balance, 100),
-      maxProgress: 100,
-      unlocked: true,
-      claimed: userBalance.usdt_balance < 100,
-      icon: Trophy,
-      rarity: 'epic'
-    },
-    {
-      id: 'referral_master',
-      title: 'Referral Master',
-      description: 'Earn $25 from referrals',
-      requirement: 'Total referral earnings',
-      reward: 15.0,
-      type: 'achievement',
-      progress: Math.min(referralEarnings, 25),
-      maxProgress: 25,
-      unlocked: true,
-      claimed: referralEarnings < 25,
-      icon: Target,
-      rarity: 'epic'
-    },
-    {
-      id: 'diamond_hands',
-      title: 'Diamond Hands',
-      description: 'Reach $500 USDT balance',
-      requirement: 'Maintain $500+ balance',
-      reward: 50.0,
-      type: 'milestone',
-      progress: Math.min(userBalance.usdt_balance, 500),
-      maxProgress: 500,
-      unlocked: userBalance.usdt_balance >= 100,
-      claimed: userBalance.usdt_balance < 500,
-      icon: Zap,
-      rarity: 'legendary'
-    }
+  const investmentStrategy = [
+    { min: 10, max: 100, minYield: 0.5, maxYield: 2, label: '$10 - $100', description: 'Earn daily yields.', icon: Coins, gradient: 'from-green-400 to-emerald-500' },
+    { min: 100, max: 500, minYield: 2, maxYield: 4, label: '$100 - $500', description: 'Higher earning potential.', icon: Zap, gradient: 'from-blue-400 to-cyan-500' },
+    { min: 500, max: 1500, minYield: 4, maxYield: 6, label: '$500 - $1500', description: 'Maximum yields.', icon: Star, gradient: 'from-purple-400 to-pink-500' },
   ];
 
-  const handleClaimReward = (reward: Reward) => {
-    onClaimReward(reward.reward);
-    toast({
-      title: 'Reward Claimed!',
-      description: `You received ${reward.reward} USDT for ${reward.title}`,
-      duration: 3000,
-    });
+  const getRewardPercentage = (balance: number) => {
+    if (balance >= 10 && balance <= 100) return 1.5;
+    if (balance > 100 && balance <= 500) return 2.5;
+    if (balance > 500 && balance <= 1500) return 3.5;
+    return 0;
   };
 
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case 'common': return 'bg-gray-500';
-      case 'rare': return 'bg-blue-500';
-      case 'epic': return 'bg-purple-500';
-      case 'legendary': return 'bg-yellow-500';
-      default: return 'bg-gray-500';
+  const rewards = [
+    {
+      type: 'Balance Reward',
+      amount: (userBalance?.usdt_balance || 0) * (getRewardPercentage(userBalance?.usdt_balance || 0) / 100),
+      claimed: false,
+      icon: DollarSign,
+      gradient: 'from-green-400 to-emerald-500',
+      canClaim: Date.now() - lastRewardClaim >= 24 * 60 * 60 * 1000,
+    },
+    {
+      type: 'Referral Bonus',
+      amount: referralEarnings,
+      claimed: false,
+      icon: Users,
+      gradient: 'from-blue-400 to-cyan-500',
+      canClaim: Date.now() - lastRewardClaim >= 24 * 60 * 60 * 1000,
+    },
+  ].filter((r) => r.amount > 0);
+
+  const handleClaimReward = (index: number) => {
+    const reward = rewards[index];
+    if (reward.canClaim) {
+      onClaimReward(reward.amount);
+      toast({ title: 'Reward Claimed', description: `Claimed ${reward.amount.toFixed(4)} USDT.` });
+    } else {
+      const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - (Date.now() - lastRewardClaim)) / (1000 * 60 * 60));
+      toast({ variant: 'destructive', title: 'Cannot Claim', description: `Wait ${hoursLeft} hours.` });
     }
   };
-
-  const getRarityTextColor = (rarity: string) => {
-    switch (rarity) {
-      case 'common': return 'text-gray-600';
-      case 'rare': return 'text-blue-600';
-      case 'epic': return 'text-purple-600';
-      case 'legendary': return 'text-yellow-600';
-      default: return 'text-gray-600';
-    }
-  };
-
-  const totalAvailableRewards = rewards.filter(r => r.unlocked && r.progress >= r.maxProgress && !r.claimed).length;
-  const totalClaimedRewards = rewards.filter(r => r.claimed || (r.progress >= r.maxProgress && r.type !== 'daily')).length;
 
   return (
     <div className="space-y-6">
-      {/* Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="card-crypto hover:card-glow transition-all duration-300">
-          <CardHeader className="bg-gradient-primary text-primary-foreground rounded-t-lg">
-            <CardTitle className="flex items-center text-lg">
-              <Gift className="w-5 h-5 mr-2" />
-              Available Rewards
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="text-3xl font-bold text-foreground">{totalAvailableRewards}</div>
-            <p className="text-sm text-muted-foreground mt-1">Ready to claim</p>
-          </CardContent>
-        </Card>
-
-        <Card className="card-crypto hover:card-glow transition-all duration-300">
-          <CardHeader className="bg-gradient-success text-success-foreground rounded-t-lg">
-            <CardTitle className="flex items-center text-lg">
-              <CheckCircle className="w-5 h-5 mr-2" />
-              Claimed Rewards
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="text-3xl font-bold text-foreground">{totalClaimedRewards}</div>
-            <p className="text-sm text-muted-foreground mt-1">Total achievements</p>
-          </CardContent>
-        </Card>
-
-        <Card className="card-crypto hover:card-glow transition-all duration-300">
-          <CardHeader className="bg-gradient-secondary text-secondary-foreground rounded-t-lg">
-            <CardTitle className="flex items-center text-lg">
-              <Coins className="w-5 h-5 mr-2" />
-              Rewards Value
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="text-3xl font-bold text-foreground">
-              ${rewards.reduce((sum, r) => r.claimed || (r.progress >= r.maxProgress && r.type !== 'daily') ? sum + r.reward : sum, 0).toFixed(1)}
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">Total USDT earned</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Daily Reward Section */}
-      <Card className="card-crypto">
+      <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20">
         <CardHeader>
-          <CardTitle className="flex items-center text-xl text-foreground">
-            <Gift className="w-6 h-6 mr-2 text-primary" />
-            Daily Reward
-          </CardTitle>
-          <CardDescription>
-            Claim your daily bonus every 24 hours
-          </CardDescription>
+          <CardTitle className="flex items-center"><Gift className="w-6 h-6 mr-3" />Available Rewards</CardTitle>
+          <CardDescription>Claim every 24 hours</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between p-6 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center">
-                <Gift className="w-8 h-8 text-primary-foreground" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">Daily Bonus</h3>
-                <p className="text-muted-foreground">+1.0 USDT</p>
-              </div>
-            </div>
-            <div className="text-right">
-              {canClaimDaily ? (
-                <Button 
-                  onClick={() => handleClaimReward(rewards[0])}
-                  className="btn-crypto"
-                >
-                  <Gift className="w-4 h-4 mr-2" />
-                  Claim Now
-                </Button>
-              ) : (
-                <div>
-                  <div className="flex items-center text-muted-foreground mb-2">
-                    <Clock className="w-4 h-4 mr-1" />
-                    Next reward in
-                  </div>
-                  <div className="text-lg font-bold text-foreground">{timeUntilNextClaim}</div>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* All Rewards */}
-      <Card className="card-crypto">
-        <CardHeader>
-          <CardTitle className="flex items-center text-xl text-foreground">
-            <Trophy className="w-6 h-6 mr-2 text-primary" />
-            All Rewards
-          </CardTitle>
-          <CardDescription>
-            Complete milestones and achievements to earn USDT rewards
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {rewards.map((reward) => {
-              const Icon = reward.icon;
-              const isCompleted = reward.progress >= reward.maxProgress;
-              const canClaim = reward.unlocked && isCompleted && !reward.claimed && reward.type !== 'daily';
-              const isDailyClaimed = reward.type === 'daily' && !canClaimDaily;
-
-              return (
-                <div 
-                  key={reward.id}
-                  className={`p-4 rounded-xl border transition-all duration-300 ${
-                    !reward.unlocked 
-                      ? 'bg-muted/30 border-muted' 
-                      : isCompleted 
-                        ? 'bg-success/10 border-success/30 shadow-glow' 
-                        : 'bg-card border-border hover:border-primary/30'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        !reward.unlocked ? 'bg-muted' : getRarityColor(reward.rarity)
-                      }`}>
-                        {reward.unlocked ? (
-                          <Icon className="w-6 h-6 text-white" />
-                        ) : (
-                          <Lock className="w-6 h-6 text-muted-foreground" />
-                        )}
+          {rewards.length > 0 ? (
+            <div className="grid gap-4">
+              {rewards.map((reward, index) => (
+                <Card key={index} className="bg-white dark:bg-gray-800">
+                  <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-12 h-12 bg-gradient-to-r ${reward.gradient} rounded-xl flex items-center justify-center`}>
+                        <reward.icon className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className={`font-semibold ${getRarityTextColor(reward.rarity)}`}>
-                          {reward.title}
-                        </h3>
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs capitalize ${getRarityTextColor(reward.rarity)} border-current`}
-                        >
-                          {reward.rarity}
-                        </Badge>
+                        <div className="font-bold text-base">{reward.type}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">${reward.amount.toFixed(4)} USDT</div>
+                        {!reward.canClaim && <div className="text-xs text-orange-600 dark:text-orange-400">{Math.ceil((24 * 60 * 60 * 1000 - (Date.now() - lastRewardClaim)) / (1000 * 60 * 60))} hours left</div>}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-success">+{reward.reward} USDT</div>
-                      {isCompleted && (reward.claimed || isDailyClaimed) && (
-                        <Badge variant="outline" className="text-xs bg-success/10 text-success border-success/30">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Claimed
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-muted-foreground mb-3">{reward.description}</p>
-                  <p className="text-xs text-muted-foreground mb-3">{reward.requirement}</p>
-
-                  {reward.unlocked && reward.maxProgress > 1 && (
-                    <div className="mb-3">
-                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                        <span>Progress</span>
-                        <span>{reward.progress.toFixed(1)} / {reward.maxProgress}</span>
-                      </div>
-                      <Progress 
-                        value={(reward.progress / reward.maxProgress) * 100} 
-                        className="h-2"
-                      />
-                    </div>
-                  )}
-
-                  {canClaim && (
-                    <Button 
-                      onClick={() => handleClaimReward(reward)}
-                      className="w-full btn-success"
-                      size="sm"
-                    >
-                      <Gift className="w-4 h-4 mr-2" />
-                      Claim Reward
+                    <Button onClick={() => handleClaimReward(index)} disabled={!reward.canClaim} className={`w-full sm:w-auto ${reward.canClaim ? `bg-gradient-to-r ${reward.gradient} text-white` : 'bg-gray-300 text-gray-500'}`}>
+                      {reward.canClaim ? 'Claim Reward' : 'Not Available'}
                     </Button>
-                  )}
-
-                  {!reward.unlocked && (
-                    <div className="text-xs text-muted-foreground italic">
-                      Complete previous milestones to unlock
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500 dark:text-gray-400">No rewards available at this time.</p>
+          )}
+        </CardContent>
+      </Card>
+      <Card className="bg-white dark:bg-gray-800">
+        <CardHeader>
+          <CardTitle className="flex items-center"><Coins className="w-6 h-6 mr-3" />Investment Strategy Tiers</CardTitle>
+          <CardDescription>Maximize your returns</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            {investmentStrategy.map((strategy, index) => (
+              <Card key={index} className="bg-white dark:bg-gray-800">
+                <CardContent className="p-4 flex items-start space-x-4">
+                  <div className={`w-12 h-12 bg-gradient-to-r ${strategy.gradient} rounded-2xl flex items-center justify-center`}>
+                    <strategy.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold">{strategy.label}</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{strategy.description}</p>
+                    <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20">{strategy.minYield}% - {strategy.maxYield}% Daily</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </CardContent>
       </Card>
