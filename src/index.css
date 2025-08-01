@@ -285,3 +285,7 @@
     box-shadow: 0 0 40px hsla(var(--primary), 0.6);
   }
 }
+
+.confirm-wallet-toast [toast-close] {
+  display: none !important;
+}
